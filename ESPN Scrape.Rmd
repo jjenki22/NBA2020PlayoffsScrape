@@ -1,0 +1,172 @@
+---
+title: "ESPN Scrape"
+author: "Joe Jenkins"
+date: "9/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+I scrapped 7 games from ESPN and the 2020 NBA playoffs. The link that this code is based on is the following:
+
+  - https://www.espn.com/nba/schedule/_/date/20200910
+  
+### Packages Used
+
+```{r}
+library(httr)
+library(rvest)
+library(stringr)
+library(DT)
+link <- "https://www.espn.com/nba/schedule/_/date/20200910"
+```
+
+### Scrapping the Initial Page
+First, I scrapped the homepage to get all of the unique game ids.
+
+```{r}
+nba <- read_html(link)
+nba_links <- nba%>% 
+  html_nodes("a[href*='/nba/game?gameId=']") %>% 
+  html_attr("href") %>% 
+  unique() %>% 
+  str_replace(., "/nba/game", "") %>% 
+  paste("https://www.espn.com/nba/playbyplay", ., sep ="")
+```
+
+### Creating a Function to Get the Games
+Next, I created a function to get the games so I did not have to individually call for each game. Then I executed the function and saved it to object "games"
+
+```{r}
+get_games <- function(x) {
+  read_html(x) %>% 
+    html_table(fill = TRUE)
+}
+
+games <- lapply(nba_links, get_games)
+```
+
+### Combining Quarters Function 
+After this, I created two functions. One called, "combine_quarters_1" and the other called "combine_quarters_2." Some of the calls have two dataframes along with the ones we want and some have only one extra data frame. Due to this, I created two functions and called them appropriately. In addition, it drops two columns that only cotain the value NA. Finally, if I was doing any sort of work with this data, I would have added the quarter to the data frame. However, in my opnion this is a data scraping exercise and thus that was outside the scope of this project.
+
+```{r}
+combine_quarters_1 <- function(x) {
+  table_length <- length(x) - 1
+  datalist <- list()
+  for (y in 2:table_length) {
+    iteration <- y - 1
+    datalist[[iteration]] <- x[[y]]
+  }
+  out <- do.call(rbind, datalist)
+  out <- out[,c(1,3,4)]
+}
+
+combine_quarters_2 <- function(x) {
+  table_length <- length(x) - 2
+  datalist <- list()
+  for (y in 2:table_length) {
+    iteration <- y - 1
+    datalist[[iteration]] <- x[[y]]
+  }
+  out <- do.call(rbind, datalist)
+  out <- out[,c(1,3,4)]
+}
+```
+
+### Creating Data Frames
+Next, I called the appropriate function and named each game correctly based on the teams playing.
+
+#### Los Angles Lakers vs. Houston 
+
+```{r}
+LAL_HOU <- games[[1]]
+LAL_HOU <- combine_quarters_2(LAL_HOU)
+```
+
+#### Denver vs. Los Angeles Clippers
+
+```{r}
+DEN_LAC <- games[[2]]
+DEN_LAC <- combine_quarters_2(DEN_LAC)
+```
+
+#### Boston vs. Toronto 
+
+```{r}
+BOS_TOR <- games[[3]]
+BOS_TOR <- combine_quarters_1(BOS_TOR)
+```
+
+#### Houston vs. Los Angeles Lakers
+
+```{r}
+HOU_LAL <- games[[4]]
+HOU_LAL <- combine_quarters_2(HOU_LAL)
+```
+
+#### Los Angeles Clippers vs. Denver 
+
+```{r}
+LAC_DEN <- games[[5]]
+LAC_DEN <- combine_quarters_2(LAC_DEN)
+```
+
+#### Miami vs. Boston 
+
+```{r}
+MIA_BOS <- games[[6]]
+MIA_BOS <- combine_quarters_2(MIA_BOS)
+```
+
+#### Denver vs. Los Angeles Clippers
+
+```{r}
+DEN_LAC <- games[[7]]
+DEN_LAC <- combine_quarters_2(DEN_LAC)
+```
+
+#### Printing the DataFrames 
+
+#### Los Angles Lakers vs. Houston 
+
+```{r}
+DT::datatable(LAL_HOU)
+```
+
+#### Denver vs. Los Angeles Clippers
+
+```{r}
+DT::datatable(DEN_LAC)
+```
+
+#### Boston vs. Toronto 
+
+```{r}
+DT::datatable(BOS_TOR)
+```
+
+#### Houston vs. Los Angeles Lakers
+
+```{r}
+DT::datatable(HOU_LAL)
+```
+
+#### Los Angeles Clippers vs. Denver 
+
+```{r}
+DT::datatable(LAC_DEN)
+```
+
+#### Miami vs. Boston 
+
+```{r}
+DT::datatable(MIA_BOS)
+```
+
+#### Denver vs. Los Angeles Clippers
+
+```{r}
+DT::datatable(DEN_LAC)
+```
